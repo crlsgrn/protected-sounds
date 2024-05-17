@@ -19,7 +19,7 @@ ProtectedSoundsAudioProcessor::ProtectedSoundsAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ), apvts(*this, nullptr, "Parameters", createParameters())
 #endif
 {
     mFormatManager.registerBasicFormats();
@@ -222,6 +222,17 @@ void ProtectedSoundsAudioProcessor::updateADSR(){
     }
 }
 
+
+juce::AudioProcessorValueTreeState::ParameterLayout createParameters(){
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameters;
+    
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> ("Attack", "Attack", 0.0f, 5.0f, 0.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> ("Decay", "Decay", 0.0f, 3.0f, 0.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> ("Sustain", "Sustain", 0.0f, 1.0f, 1.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> ("Release", "Release", 0.0f, 5.0f, 2.0f));
+
+    return { parameters.begin(), parameters.end() };
+}
 
 //==============================================================================
 // This creates new instances of the plugin..

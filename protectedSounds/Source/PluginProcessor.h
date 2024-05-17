@@ -72,7 +72,8 @@ private:
     
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    
+    juce::AudioProcessorValueTreeState apvts;
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ProtectedSoundsAudioProcessor)
