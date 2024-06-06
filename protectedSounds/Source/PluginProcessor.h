@@ -13,10 +13,11 @@
 //==============================================================================
 /**
 */
-class ProtectedSoundsAudioProcessor  : public juce::AudioProcessor
+class ProtectedSoundsAudioProcessor  : public juce::AudioProcessor, public juce::ValueTree::Listener
                             #if JucePlugin_Enable_ARA
                              , public juce::AudioProcessorARAExtension
                             #endif
+
 {
 public:
     //==============================================================================
@@ -55,25 +56,40 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
-    void loadFile();
+    void loadFile1();
+    void loadFile2();
 
     void updateADSR();
 
     juce::ADSR::Parameters& getADSRParams() { return mADSRParams; }
+    juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; } //to make it public and use it in plugin editor 
     
 private:
-    juce::Synthesiser mSampler;
+    juce::Synthesiser mSampler1;
+    juce::Synthesiser mSampler2;
+    
     const int mNumVoices { 3 };
     
     juce::ADSR::Parameters mADSRParams;
+    juce::AudioBuffer<float> tempBuffer;
+
     
     juce::AudioFormatManager mFormatManager;
+    juce::AudioFormatManager mFormatManager2;
+
     juce::AudioFormatReader* mFormatReader { nullptr };
+    juce::AudioFormatReader* mFormatReader2 { nullptr };
+
     
     std::unique_ptr<juce::FileChooser> fileChooser;
+    std::unique_ptr<juce::FileChooser> fileChooser2;
+
 
     juce::AudioProcessorValueTreeState apvts;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
+    void valueTreePropertyChanged (juce::ValueTree& treeWhosePropertyHasChanged, const juce::Identifier& property) override;
+    
+    std::atomic<bool> sUpdate { false };
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ProtectedSoundsAudioProcessor)

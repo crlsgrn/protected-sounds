@@ -22,15 +22,25 @@ ProtectedSoundsAudioProcessor::ProtectedSoundsAudioProcessor()
                        ), apvts(*this, nullptr, "Parameters", createParameters())
 #endif
 {
+
     mFormatManager.registerBasicFormats();
+    mFormatManager2.registerBasicFormats();
+
+    //we need to register the value tree listener and associate to ur audio processor value tree state
+    apvts.state.addListener(this);
+    
     for(int i = 0; i<mNumVoices; i++){
-        mSampler.addVoice(new juce::SamplerVoice());
+        mSampler1.addVoice(new juce::SamplerVoice());
+        mSampler2.addVoice(new juce::SamplerVoice());
     }
 }
 
 ProtectedSoundsAudioProcessor::~ProtectedSoundsAudioProcessor()
 {
+    apvts.state.removeListener(this);
     mFormatReader = nullptr;
+    mFormatReader2 = nullptr;
+
 }
 
 //==============================================================================
@@ -98,7 +108,10 @@ void ProtectedSoundsAudioProcessor::changeProgramName (int index, const juce::St
 //==============================================================================
 void ProtectedSoundsAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    mSampler.setCurrentPlaybackSampleRate(sampleRate);
+    mSampler1.setCurrentPlaybackSampleRate(sampleRate);
+    mSampler2.setCurrentPlaybackSampleRate(sampleRate);
+    tempBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
+    updateADSR();
     
 }
 
@@ -141,11 +154,31 @@ void ProtectedSoundsAudioProcessor::processBlock (juce::AudioBuffer<float>& buff
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     
 
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i){
         buffer.clear (i, 0, buffer.getNumSamples());
+        tempBuffer.clear (i, 0, tempBuffer.getNumSamples());
+    }
     
-    mSampler.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+    
+    if(sUpdate){
+        updateADSR();
+    }
+    
+    mSampler1.renderNextBlock(tempBuffer, midiMessages, 0, buffer.getNumSamples());
+    
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        buffer.addFrom(channel, 0, tempBuffer, channel, 0, buffer.getNumSamples());
+    }
+    
+    tempBuffer.clear();
+    
+    mSampler2.renderNextBlock(tempBuffer, midiMessages, 0, buffer.getNumSamples());
 
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        buffer.addFrom(channel, 0, tempBuffer, channel, 0, buffer.getNumSamples());
+    }
 
 }
 
@@ -175,7 +208,7 @@ void ProtectedSoundsAudioProcessor::setStateInformation (const void* data, int s
     // whose contents will have been created by the getStateInformation() call.
 }
 
-void ProtectedSoundsAudioProcessor::loadFile()
+void ProtectedSoundsAudioProcessor::loadFile1()
 {
     fileChooser = std::make_unique<juce::FileChooser>(
         "Choose an audio file",
@@ -188,7 +221,7 @@ void ProtectedSoundsAudioProcessor::loadFile()
 
     fileChooser->launchAsync(fileChooserFlags, [this](const juce::FileChooser& chooser) {
         const juce::File chosenFile(chooser.getResult());
-        DBG("Selected file: " + chosenFile.getFullPathName());
+        DBG("Selected file for sampler1: " + chosenFile.getFullPathName());
 
         // Intenta crear un AudioFormatReader para el archivo seleccionado
         std::unique_ptr<juce::AudioFormatReader> audioReader(mFormatManager.createReaderFor(chosenFile));
@@ -197,41 +230,93 @@ void ProtectedSoundsAudioProcessor::loadFile()
         {
             juce::BigInteger range;
             range.setRange(0, 128, true);
+            mSampler1.clearSounds();
 
             // Crea un SamplerSound con el AudioFormatReader válido
-            mSampler.addSound(new juce::SamplerSound("Sample", *audioReader, range, 60, 0.1, 0.1, 10.0));
-            //mSampler.addSound(new juce::SamplerSound(<#const String &name#>, <#AudioFormatReader &source#>, <#const BigInteger &midiNotes#>, <#int midiNoteForNormalPitch#>, <#double attackTimeSecs#>, <#double releaseTimeSecs#>, <#double maxSampleLengthSeconds#>))
-            
+            mSampler1.addSound(new juce::SamplerSound("Sample", *audioReader, range, 60, 0.1, 0.1, 10.0));
+            //mSampler.addSound(new juce::SamplerSound(const String &name, AudioFormatReader &source, const BigInteger &midiNotes, int midiNoteForNormalPitch, double attackTimeSecs, double releaseTimeSecs, double maxSampleLengthSeconds))
+            updateADSR();
+
         }
         else
         {
             DBG("Error: Failed to create AudioFormatReader or invalid sample rate.");
         }
     });
+    
 }
+
+void ProtectedSoundsAudioProcessor::loadFile2()
+{
+    fileChooser2 = std::make_unique<juce::FileChooser>(
+        "Choose an audio file",
+        juce::File::getSpecialLocation(juce::File::userHomeDirectory),
+        "*.wav;*.mp3", // Filtra archivos por formato WAV o MP3
+        true); // Permitir selección de archivos
+
+    constexpr auto fileChooserFlags = juce::FileBrowserComponent::openMode |
+                                      juce::FileBrowserComponent::canSelectFiles;
+
+    fileChooser2->launchAsync(fileChooserFlags, [this](const juce::FileChooser& chooser) {
+        const juce::File chosenFile(chooser.getResult());
+        DBG("Selected file for sampler2: " + chosenFile.getFullPathName());
+
+        // Intenta crear un AudioFormatReader para el archivo seleccionado
+        std::unique_ptr<juce::AudioFormatReader> audioReader(mFormatManager2.createReaderFor(chosenFile));
+
+        if (audioReader != nullptr && audioReader->sampleRate > 0)
+        {
+            juce::BigInteger range;
+            range.setRange(0, 128, true);
+            mSampler2.clearSounds();
+
+            // Crea un SamplerSound con el AudioFormatReader válido
+            mSampler2.addSound(new juce::SamplerSound("Sample", *audioReader, range, 60, 0.1, 0.1, 10.0));
+            //mSampler.addSound(new juce::SamplerSound(const String &name, AudioFormatReader &source, const BigInteger &midiNotes, int midiNoteForNormalPitch, double attackTimeSecs, double releaseTimeSecs, double maxSampleLengthSeconds))
+            updateADSR();
+
+        }
+        else
+        {
+            DBG("Error: Failed to create AudioFormatReader or invalid sample rate.");
+        }
+    });
+    
+}
+
 
 void ProtectedSoundsAudioProcessor::updateADSR(){
     
-    for (int i = 0; i < mSampler.getNumSounds(); ++i){
-        DBG("NUM SOUNDS" << mSampler.getNumSounds());
+    mADSRParams.attack = apvts.getRawParameterValue("Attack")->load();
+    mADSRParams.decay = apvts.getRawParameterValue("Decay")->load();
+    mADSRParams.sustain = apvts.getRawParameterValue("Sustain")->load();
+    mADSRParams.release = apvts.getRawParameterValue("Release")->load();
 
+    
+    for (int i = 0; i < mSampler1.getNumSounds(); ++i){
         
-        if(auto sound = dynamic_cast<juce::SamplerSound*>(mSampler.getSound(i).get())){
+        if(auto sound = dynamic_cast<juce::SamplerSound*>(mSampler1.getSound(i).get())){
             sound->setEnvelopeParameters(mADSRParams);
         }
     }
 }
 
 
-juce::AudioProcessorValueTreeState::ParameterLayout createParameters(){
+juce::AudioProcessorValueTreeState::ParameterLayout ProtectedSoundsAudioProcessor::createParameters(){
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameters;
     
-    parameters.push_back(std::make_unique<juce::AudioParameterFloat> ("Attack", "Attack", 0.0f, 5.0f, 0.0f));
-    parameters.push_back(std::make_unique<juce::AudioParameterFloat> ("Decay", "Decay", 0.0f, 3.0f, 0.0f));
-    parameters.push_back(std::make_unique<juce::AudioParameterFloat> ("Sustain", "Sustain", 0.0f, 1.0f, 1.0f));
-    parameters.push_back(std::make_unique<juce::AudioParameterFloat> ("Release", "Release", 0.0f, 5.0f, 2.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Attack",1) , "Attack", 0.0f, 5.0f, 0.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Decay",1) , "Decay", 0.0f, 5.0f, 2.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Sustain",1) , "Sustain", 0.0f, 1.0f, 1.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Release",1) , "Release", 0.0f, 5.0f, 0.0f));
 
     return { parameters.begin(), parameters.end() };
+}
+
+void ProtectedSoundsAudioProcessor::valueTreePropertyChanged(juce::ValueTree& treeWhosePropertyHasChanged, const juce::Identifier& property){
+    
+    sUpdate = true;
+    
 }
 
 //==============================================================================

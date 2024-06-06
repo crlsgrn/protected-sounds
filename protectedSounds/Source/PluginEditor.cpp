@@ -13,21 +13,25 @@
 ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor (ProtectedSoundsAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    mLoadButton.onClick = [&]() { audioProcessor.loadFile(); };
-    addAndMakeVisible(mLoadButton);
+    mLoadButton1.onClick = [&]() { audioProcessor.loadFile1(); };
+    addAndMakeVisible(mLoadButton1);
+    
+    mLoadButton2.onClick = [&]() { audioProcessor.loadFile2(); };
+    addAndMakeVisible(mLoadButton2);
     
     //==============================================================================//
     
     mAttackSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     mAttackSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 40, 20);
     mAttackSlider.setRange(0.0f, 5.0f, 0.01f);
-    mAttackSlider.addListener(this);
     addAndMakeVisible(mAttackSlider);
     
     mAttackLabel.setFont(10.0f);
     mAttackLabel.setText("Attack", juce::NotificationType::dontSendNotification);
     mAttackLabel.setJustificationType(juce::Justification::centredTop);
     mAttackLabel.attachToComponent(&mAttackSlider, false);
+    
+    mAttackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.getAPVTS(), "Attack", mAttackSlider);
     
     //==============================================================================//
     
@@ -41,6 +45,8 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor (Protec
     mDecayLabel.setJustificationType(juce::Justification::centredTop);
     mDecayLabel.attachToComponent(&mDecaySlider, false);
     
+    mDecayAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.getAPVTS(), "Decay", mDecaySlider);
+
     //==============================================================================//
     
     mSustainSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
@@ -52,6 +58,8 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor (Protec
     mSustainLabel.setText("Sustain", juce::NotificationType::dontSendNotification);
     mSustainLabel.setJustificationType(juce::Justification::centredTop);
     mSustainLabel.attachToComponent(&mSustainSlider, false);
+    
+    mSustainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.getAPVTS(), "Sustain", mSustainSlider);
     
     //==============================================================================//
     
@@ -65,13 +73,10 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor (Protec
     mReleaseLabel.setJustificationType(juce::Justification::centredTop);
     mReleaseLabel.attachToComponent(&mReleaseSlider, false);
     
-
+    mReleaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.getAPVTS(), "Release", mReleaseSlider);
     
     
-    
-    
-    
-    setSize (600, 200);
+    setSize (800, 200);
 }
 
 ProtectedSoundsAudioProcessorEditor::~ProtectedSoundsAudioProcessorEditor()
@@ -91,7 +96,8 @@ void ProtectedSoundsAudioProcessorEditor::paint (juce::Graphics& g)
 
 void ProtectedSoundsAudioProcessorEditor::resized()
 {
-    mLoadButton.setBounds(getWidth()/2 - 50, getHeight()/2 - 50, 100, 100);
+    mLoadButton1.setBounds(getWidth()/2 - 50, getHeight()/2 - 50, 100, 100);
+    mLoadButton2.setBounds(getWidth()/2 - 300, getHeight()/2 - 50, 100, 100);
     
     const auto startX = 0.6f;
     const auto startY = 0.6f;
@@ -103,21 +109,4 @@ void ProtectedSoundsAudioProcessorEditor::resized()
     mSustainSlider.setBoundsRelative(startX + (dialWidth * 2), startY, dialWidth, dialHeight);
     mReleaseSlider.setBoundsRelative(startX + (dialWidth * 3), startY, dialWidth, dialHeight);
 }
-
-void ProtectedSoundsAudioProcessorEditor::sliderValueChanged(juce::Slider *slider){
-    //escuchando a cambios que el usuario haga en el slider de la UI
-    if(slider == &mAttackSlider){
-        audioProcessor.getADSRParams().attack = mAttackSlider.getValue();
-    }else if (slider == &mDecaySlider){
-        audioProcessor.getADSRParams().decay = mDecaySlider.getValue();
-    }else if (slider == &mSustainSlider){
-        audioProcessor.getADSRParams().sustain = mSustainSlider.getValue();
-    }else if (slider == &mReleaseSlider){
-        audioProcessor.getADSRParams().release = mReleaseSlider.getValue();
-    }
-    
-    audioProcessor.updateADSR();
-        
-}
-
 
