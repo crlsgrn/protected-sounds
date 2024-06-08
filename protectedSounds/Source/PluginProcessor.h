@@ -60,6 +60,8 @@ public:
     void loadFile2();
 
     void updateADSR();
+    
+    void limit(juce::AudioBuffer<float>& buffer, float threshold);
 
     juce::ADSR::Parameters& getADSRParams() { return mADSRParams; }
     juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; } //to make it public and use it in plugin editor 
@@ -69,6 +71,8 @@ private:
     juce::Synthesiser mSampler2;
     
     const int mNumVoices { 3 };
+    
+    juce::dsp::Limiter<float> limiter;
     
     juce::ADSR::Parameters mADSRParams;
     juce::AudioBuffer<float> tempBuffer;

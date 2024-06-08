@@ -25,6 +25,9 @@ ProtectedSoundsAudioProcessor::ProtectedSoundsAudioProcessor()
 
     mFormatManager.registerBasicFormats();
     mFormatManager2.registerBasicFormats();
+    
+    limiter.setThreshold(0.0f);  // 0 dB
+    limiter.setRelease(100.0f);  // Release time in milliseconds
 
     //we need to register the value tree listener and associate to ur audio processor value tree state
     apvts.state.addListener(this);
@@ -113,6 +116,13 @@ void ProtectedSoundsAudioProcessor::prepareToPlay (double sampleRate, int sample
     tempBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
     updateADSR();
     
+    // Prepare the limiter
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumOutputChannels();
+    limiter.prepare(spec);
+    
 }
 
 void ProtectedSoundsAudioProcessor::releaseResources()
@@ -179,7 +189,10 @@ void ProtectedSoundsAudioProcessor::processBlock (juce::AudioBuffer<float>& buff
     {
         buffer.addFrom(channel, 0, tempBuffer, channel, 0, buffer.getNumSamples());
     }
-
+    
+    juce::dsp::AudioBlock<float> audioBlock(buffer);
+    juce::dsp::ProcessContextReplacing<float> context(audioBlock);
+    limiter.process(context);
 }
 
 //==============================================================================
@@ -300,6 +313,19 @@ void ProtectedSoundsAudioProcessor::updateADSR(){
         }
     }
 }
+
+void limit(juce::AudioBuffer<float>& buffer, float threshold){
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        float* samples = buffer.getWritePointer(channel);
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            if (samples[sample] > threshold)
+                samples[sample] = threshold;
+        }
+    }
+}
+
 
 
 juce::AudioProcessorValueTreeState::ParameterLayout ProtectedSoundsAudioProcessor::createParameters(){
