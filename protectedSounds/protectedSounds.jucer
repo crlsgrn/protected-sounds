@@ -4,6 +4,12 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn">
   <MAINGROUP id="QTWKvK" name="protectedSounds">
     <GROUP id="{2A6EBD8B-089A-0A79-8409-21DDAFDCE3D8}" name="Source">
+      <FILE id="mrOpvF" name="comb_57_68_v89_110.wav" compile="0" resource="1"
+            file="../../../Library/CloudStorage/GoogleDrive-carlosgarinpina@gmail.com/Mi unidad/audios3/68/comb_57_68_v89_110.wav"/>
+      <FILE id="GpzpSF" name="ProtectedSoundsManager.cpp" compile="1" resource="1"
+            file="Source/ProtectedSoundsManager.cpp"/>
+      <FILE id="mnGhap" name="ProtectedSoundsManager.h" compile="0" resource="1"
+            file="Source/ProtectedSoundsManager.h"/>
       <FILE id="x0p5hp" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="RDi4Ip" name="PluginProcessor.h" compile="0" resource="0"

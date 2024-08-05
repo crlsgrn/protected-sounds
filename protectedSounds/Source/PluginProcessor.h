@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "ProtectedSoundsManager.h"
 
 //==============================================================================
 /**
@@ -58,6 +59,10 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     void loadFile1();
     void loadFile2();
+    
+    void loadProtectedSound1(const juce::String& soundName);
+    void loadProtectedSound2(const juce::String& soundName);
+    juce::StringArray getAvailableSounds() const;
 
     void updateADSR();
     
@@ -94,6 +99,9 @@ private:
     void valueTreePropertyChanged (juce::ValueTree& treeWhosePropertyHasChanged, const juce::Identifier& property) override;
     
     std::atomic<bool> sUpdate { false };
+    
+    ProtectedSoundsManager soundsManager;
+
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ProtectedSoundsAudioProcessor)
