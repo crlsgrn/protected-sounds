@@ -35,6 +35,9 @@ private:
     
     ProtectedSoundsAudioProcessor& audioProcessor;
     
+    juce::ComboBox soundSelector1;
+    juce::ComboBox soundSelector2;
+    
     juce::Slider mAttackSlider, mDecaySlider, mSustainSlider, mReleaseSlider;
     juce::Label mAttackLabel, mDecayLabel, mSustainLabel, mReleaseLabel;
     

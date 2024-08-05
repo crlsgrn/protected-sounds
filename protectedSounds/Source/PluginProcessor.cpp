@@ -298,6 +298,54 @@ void ProtectedSoundsAudioProcessor::loadFile2()
     
 }
 
+void ProtectedSoundsAudioProcessor::loadProtectedSound1(const juce::String& soundName)
+{
+    auto inputStream = soundsManager.loadSound(soundName);
+    
+    
+    if (inputStream != nullptr)
+    {
+        std::unique_ptr<juce::AudioFormatReader> reader(mFormatManager.createReaderFor(std::move(inputStream)));
+
+        if (reader != nullptr)
+        {
+            juce::BigInteger range;
+            range.setRange(0, 128, true);
+            mSampler1.clearSounds();
+            mSampler1.addSound(new juce::SamplerSound(soundName, *reader, range, 60, 0.1, 0.1, 10.0));
+            updateADSR();
+            std::cout << "adios" << std::endl;
+
+
+        }
+    }
+
+    
+}
+
+void ProtectedSoundsAudioProcessor::loadProtectedSound2(const juce::String& soundName)
+{
+    auto inputStream = soundsManager.loadSound(soundName);
+    if (inputStream != nullptr)
+    {
+        std::unique_ptr<juce::AudioFormatReader> reader(mFormatManager2.createReaderFor(std::move(inputStream)));
+        if (reader != nullptr)
+        {
+            juce::BigInteger range;
+            range.setRange(0, 128, true);
+            mSampler2.clearSounds();
+            mSampler2.addSound(new juce::SamplerSound("Sample", *reader, range, 60, 0.1, 0.1, 10.0));
+            updateADSR();
+        }
+    }
+}
+
+
+juce::StringArray ProtectedSoundsAudioProcessor::getAvailableSounds() const
+{
+    return soundsManager.getAvailableSounds();
+}
+
 
 void ProtectedSoundsAudioProcessor::updateADSR(){
     

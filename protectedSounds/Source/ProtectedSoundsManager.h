@@ -23,6 +23,8 @@ public:
 
     // Carga un sonido por su nombre y devuelve un MemoryInputStream
     std::unique_ptr<juce::MemoryInputStream> loadSound(const juce::String& soundName);
+    
+    juce::AudioFormatManager formatManager;
 
 private:
     juce::StringArray availableSounds;

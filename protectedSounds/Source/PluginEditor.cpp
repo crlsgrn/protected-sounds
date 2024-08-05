@@ -19,6 +19,16 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor (Protec
     mLoadButton2.onClick = [&]() { audioProcessor.loadFile2(); };
     addAndMakeVisible(mLoadButton2);
     
+    addAndMakeVisible(soundSelector1);
+    addAndMakeVisible(soundSelector2);
+
+    soundSelector1.addItemList(audioProcessor.getAvailableSounds(), 1);
+    soundSelector2.addItemList(audioProcessor.getAvailableSounds(), 1);
+
+    soundSelector1.onChange = [this] { audioProcessor.loadProtectedSound1(soundSelector1.getText()); };
+    soundSelector2.onChange = [this] { audioProcessor.loadProtectedSound2(soundSelector2.getText()); };
+
+    
     //==============================================================================//
     
     mAttackSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
@@ -96,7 +106,7 @@ void ProtectedSoundsAudioProcessorEditor::paint (juce::Graphics& g)
 
 void ProtectedSoundsAudioProcessorEditor::resized()
 {
-    mLoadButton1.setBounds(getWidth()/2 - 50, getHeight()/2 - 50, 100, 100);
+    soundSelector1.setBounds(getWidth()/2 - 50, getHeight()/2 - 50, 100, 100);
     mLoadButton2.setBounds(getWidth()/2 - 300, getHeight()/2 - 50, 100, 100);
     
     const auto startX = 0.6f;
