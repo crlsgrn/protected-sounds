@@ -18,6 +18,8 @@
             file="Source/PluginEditor.cpp"/>
       <FILE id="I6WwAR" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
     </GROUP>
+    <FILE id="aWSmoI" name="AudioEncryptor.cpp" compile="1" resource="0"
+          file="Source/AudioEncryptor.cpp"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
@@ -28,6 +30,7 @@
     <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_cryptography" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
@@ -56,6 +59,7 @@
         <MODULEPATH id="juce_gui_basics" path="../../Programming/JUCE/modules"/>
         <MODULEPATH id="juce_gui_extra" path="../../Programming/JUCE/modules"/>
         <MODULEPATH id="juce_dsp" path="../../Programming/JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../../Programming/JUCE/modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
   </EXPORTFORMATS>

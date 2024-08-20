@@ -314,9 +314,6 @@ void ProtectedSoundsAudioProcessor::loadProtectedSound1(const juce::String& soun
             mSampler1.clearSounds();
             mSampler1.addSound(new juce::SamplerSound(soundName, *reader, range, 60, 0.1, 0.1, 10.0));
             updateADSR();
-            std::cout << "adios" << std::endl;
-
-
         }
     }
 
@@ -350,9 +347,13 @@ juce::StringArray ProtectedSoundsAudioProcessor::getAvailableSounds() const
 void ProtectedSoundsAudioProcessor::updateADSR(){
     
     mADSRParams.attack = apvts.getRawParameterValue("Attack")->load();
+    mADSRParams2.attack = apvts.getRawParameterValue("Attack2")->load();
     mADSRParams.decay = apvts.getRawParameterValue("Decay")->load();
+    mADSRParams2.decay = apvts.getRawParameterValue("Decay2")->load();
     mADSRParams.sustain = apvts.getRawParameterValue("Sustain")->load();
+    mADSRParams2.sustain = apvts.getRawParameterValue("Sustain2")->load();
     mADSRParams.release = apvts.getRawParameterValue("Release")->load();
+    mADSRParams2.release = apvts.getRawParameterValue("Release2")->load();
 
     
     for (int i = 0; i < mSampler1.getNumSounds(); ++i){
@@ -361,6 +362,14 @@ void ProtectedSoundsAudioProcessor::updateADSR(){
             sound->setEnvelopeParameters(mADSRParams);
         }
     }
+    
+    for (int i = 0; i < mSampler2.getNumSounds(); ++i){
+        
+        if(auto sound = dynamic_cast<juce::SamplerSound*>(mSampler2.getSound(i).get())){
+            sound->setEnvelopeParameters(mADSRParams2);
+        }
+    }
+    
 }
 
 void limit(juce::AudioBuffer<float>& buffer, float threshold){
@@ -381,9 +390,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout ProtectedSoundsAudioProcesso
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameters;
     
     parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Attack",1) , "Attack", 0.0f, 5.0f, 0.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Attack2",1) , "Attack2", 0.0f, 5.0f, 0.0f));
     parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Decay",1) , "Decay", 0.0f, 5.0f, 2.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Decay2",1) , "Decay2", 0.0f, 5.0f, 2.0f));
     parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Sustain",1) , "Sustain", 0.0f, 1.0f, 1.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Sustain2",1) , "Sustain2", 0.0f, 1.0f, 1.0f));
     parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Release",1) , "Release", 0.0f, 5.0f, 0.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat> (juce::ParameterID("Release2",1) , "Release2", 0.0f, 5.0f, 0.0f));
+    
 
     return { parameters.begin(), parameters.end() };
 }

@@ -80,6 +80,8 @@ private:
     juce::dsp::Limiter<float> limiter;
     
     juce::ADSR::Parameters mADSRParams;
+    juce::ADSR::Parameters mADSRParams2;
+    
     juce::AudioBuffer<float> tempBuffer;
 
     
