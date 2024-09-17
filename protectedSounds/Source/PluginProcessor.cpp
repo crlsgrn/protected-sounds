@@ -301,6 +301,7 @@ void ProtectedSoundsAudioProcessor::loadFile2()
 void ProtectedSoundsAudioProcessor::loadProtectedSound1(const juce::String& soundName)
 {
     auto inputStream = soundsManager.loadSound(soundName);
+    auto inputStream1 = soundsManager.loadSoundEncrypted(soundName);
     
     
     if (inputStream != nullptr)
