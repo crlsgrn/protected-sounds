@@ -18,9 +18,9 @@ ProtectedSoundsManager::ProtectedSoundsManager()
 {
     // Añade los nombres de tus sonidos aquí
     // Asegúrate de que estos nombres coincidan con los nombres de los recursos que has añadido
-    availableSounds = {"comb_57_68_v89_110"};
+    availableSounds = {"comb_57_68_v89_110", "encrypted_audio", "CiberEncriptado-two_notes"};
     formatManager.registerBasicFormats();
-    encryptionKey = juce::String("clave").toUTF8();
+    encryptionKey = juce::String("mysecretkey").toUTF8();
 
 }
 
@@ -50,18 +50,28 @@ std::unique_ptr<juce::MemoryInputStream> ProtectedSoundsManager::loadSoundEncryp
         // Crear una instancia de BlowFish
         juce::BlowFish blowfish(encryptionKey.toUTF8(), encryptionKey.length());
 
-        // Copiar los datos encriptados a un nuevo buffer
-        std::vector<juce::uint32> dataBuffer(size / sizeof(juce::uint32) + (size % sizeof(juce::uint32) != 0));
-        std::memcpy(dataBuffer.data(), encryptedData, size);
+        // Crear un buffer para los datos desencriptados
+        juce::MemoryBlock decryptedBlock(size);
+        char* decryptedData = static_cast<char*>(decryptedBlock.getData());
 
-        // Desencriptar los datos en bloques de 64 bits (dos uint32)
-        for (size_t i = 0; i < dataBuffer.size() - 1; i += 2)
+        // Desencriptar los datos en bloques de 8 bytes (64 bits)
+        for (int i = 0; i < size; i += 8)
         {
-            blowfish.decrypt(dataBuffer[i], dataBuffer[i + 1]);
+            juce::uint32 left = *reinterpret_cast<const juce::uint32*>(encryptedData + i);
+            juce::uint32 right = *reinterpret_cast<const juce::uint32*>(encryptedData + i + 4);
+            
+            blowfish.decrypt(left, right);
+            
+            *reinterpret_cast<juce::uint32*>(decryptedData + i) = left;
+            *reinterpret_cast<juce::uint32*>(decryptedData + i + 4) = right;
         }
 
-        // Crear un MemoryBlock con los datos desencriptados
-        juce::MemoryBlock decryptedBlock(dataBuffer.data(), size);
+        // Eliminar el padding PKCS7 si se aplicó durante la encriptación
+        int paddingSize = decryptedData[size - 1];
+        if (paddingSize > 0 && paddingSize <= 8)
+        {
+            decryptedBlock.setSize(size - paddingSize, true);
+        }
 
         return std::make_unique<juce::MemoryInputStream>(decryptedBlock, true);
     }

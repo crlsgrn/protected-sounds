@@ -7,6 +7,14 @@
 
   ==============================================================================
 */
+
+#pragma once
+
+#define JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED 1
+#define JUCE_STANDALONE_APPLICATION 1
+#define JUCE_USE_CURL 0
+
+#include "JuceHeader.h"
 #include </Users/carlosgarin/Desktop/protected-sounds/protectedSounds/JuceLibraryCode/JuceHeader.h>
 #include <juce_core/juce_core.h>
 #include <juce_cryptography/juce_cryptography.h>

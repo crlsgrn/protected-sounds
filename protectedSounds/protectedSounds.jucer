@@ -4,6 +4,14 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn">
   <MAINGROUP id="QTWKvK" name="protectedSounds">
     <GROUP id="{2A6EBD8B-089A-0A79-8409-21DDAFDCE3D8}" name="Source">
+      <FILE id="cum5tN" name="CustomLookAndFeel.h" compile="0" resource="0"
+            file="Source/CustomLookAndFeel.h"/>
+      <FILE id="YZislb" name="CiberEncriptado-two_notes.wav" compile="0"
+            resource="1" file="../../../Downloads/CiberEncriptado-two_notes.wav"/>
+      <FILE id="f7Cdpe" name="encrypted_audio.dat" compile="0" resource="1"
+            file="../../../Downloads/encrypted_audio.dat"/>
+      <FILE id="aWSmoI" name="AudioEncryptor.cpp" compile="1" resource="0"
+            file="Source/AudioEncryptor.cpp"/>
       <FILE id="mrOpvF" name="comb_57_68_v89_110.wav" compile="0" resource="1"
             file="../../../Library/CloudStorage/GoogleDrive-carlosgarinpina@gmail.com/Mi unidad/audios3/68/comb_57_68_v89_110.wav"/>
       <FILE id="GpzpSF" name="ProtectedSoundsManager.cpp" compile="1" resource="1"
@@ -18,8 +26,6 @@
             file="Source/PluginEditor.cpp"/>
       <FILE id="I6WwAR" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
     </GROUP>
-    <FILE id="aWSmoI" name="AudioEncryptor.cpp" compile="1" resource="0"
-          file="Source/AudioEncryptor.cpp"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
