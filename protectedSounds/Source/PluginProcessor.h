@@ -4,9 +4,6 @@
 
 class ProtectedSoundsAudioProcessor : public juce::AudioProcessor,
                                     public juce::ValueTree::Listener
-#if JucePlugin_Enable_ARA
-    , public juce::AudioProcessorARAExtension
-#endif
 {
 public:
     ProtectedSoundsAudioProcessor();
@@ -38,63 +35,55 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    // Custom methods
     void loadProtectedSound1(const juce::String& soundName);
     void loadProtectedSound2(const juce::String& soundName);
     juce::StringArray getAvailableSounds() const;
     void updateADSR();
     
-    // Getters
     juce::ADSR::Parameters& getADSRParams() { return mADSRParams; }
     juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; }
+    
+    void setLoopEnabled(bool shouldLoop) { loopEnabled.store(shouldLoop); }
+    bool isLooping() const { return loopEnabled.load(); }
     double getAudioLength() const { return audioLength.load(); }
     
-    // Transport and loop control
-    juce::AudioTransportSource transportSource;
-    double getCurrentPosition() const { return transportSource.getCurrentPosition(); }
-    double getLengthInSeconds() const { return transportSource.getLengthInSeconds(); }
     void setLoopPoints(double startMs, double endMs);
-    void setLoopEnabled(bool shouldLoop);
-    bool isLooping() const { return loopEnabled.load(); }
+    double getLoopStart() const { return loopStartPosition.load(); }
+    double getLoopEnd() const { return loopEndPosition.load(); }
 
 private:
     juce::Synthesiser mSampler1;
     juce::Synthesiser mSampler2;
     const int mNumVoices { 3 };
     
-    // Audio processing
     juce::dsp::Limiter<float> limiter;
     juce::ADSR::Parameters mADSRParams;
     juce::ADSR::Parameters mADSRParams2;
     juce::AudioBuffer<float> tempBuffer;
     
-    // Format handling
     juce::AudioFormatManager mFormatManager;
     juce::AudioFormatManager mFormatManager2;
     juce::AudioFormatReader* mFormatReader { nullptr };
     juce::AudioFormatReader* mFormatReader2 { nullptr };
-    std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
-    juce::AudioFormatReader* currentReader { nullptr };
     
-    // Thread handling
-    juce::TimeSliceThread readAheadThread{"Audio File Reader"};
-    
-    // Parameters and state
     juce::AudioProcessorValueTreeState apvts;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     void valueTreePropertyChanged(juce::ValueTree& treeWhosePropertyHasChanged,
                                 const juce::Identifier& property) override;
     
     std::atomic<bool> sUpdate { false };
-    ProtectedSoundsManager soundsManager;
-    
-    // Loop control
-    std::atomic<double> loopStartPosition { 0.0 };
-    std::atomic<double> loopEndPosition { 0.0 };
+    std::atomic<bool> isNotePlaying { false };
+    std::atomic<int> currentNoteNumber { -1 };
     std::atomic<bool> loopEnabled { false };
     std::atomic<double> audioLength { 0.0 };
+    std::atomic<double> loopStartPosition { 0.0 };
+    std::atomic<double> loopEndPosition { 0.0 };
     
-    std::atomic<int> currentNoteNumber { -1 };
+    ProtectedSoundsManager soundsManager;
+
+
+    
+    
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProtectedSoundsAudioProcessor)
 };

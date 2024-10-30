@@ -1,17 +1,13 @@
-
 #include "PluginEditor.h"
 
 ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(ProtectedSoundsAudioProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p)
 {
-
     setupButtons();
     setupSliders();
     setupLabels();
-    setupLoopControls();
-    setupPositionDisplay();
 
-    // Configurar selectores de sonido
+    // Setup sound selectors
     addAndMakeVisible(soundSelector1);
     addAndMakeVisible(soundSelector2);
     
@@ -42,50 +38,22 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
             audioProcessor.loadProtectedSound2(soundSelector2.getText());
     };
 
-    startTimer(50);
     setSize(800, 300);
-
 }
 
-ProtectedSoundsAudioProcessorEditor::~ProtectedSoundsAudioProcessorEditor()
-{
-    stopTimer();
-}
+ProtectedSoundsAudioProcessorEditor::~ProtectedSoundsAudioProcessorEditor() = default;
 
 void ProtectedSoundsAudioProcessorEditor::setupButtons()
 {
-    addAndMakeVisible(playButton);
-    addAndMakeVisible(stopButton);
     addAndMakeVisible(loopButton);
-
-    playButton.onClick = [this]() {
-        if (audioProcessor.transportSource.isPlaying())
-        {
-            audioProcessor.transportSource.stop();
-            playButton.setButtonText("Play");
-        }
-        else
-        {
-            audioProcessor.transportSource.start();
-            playButton.setButtonText("Stop");
-        }
-    };
-
-    stopButton.onClick = [this]() {
-        audioProcessor.transportSource.stop();
-        audioProcessor.transportSource.setPosition(0.0);
-        playButton.setButtonText("Play");
-    };
-
+    loopButton.setToggleState(false, juce::dontSendNotification);
     loopButton.onClick = [this]() {
-        bool shouldLoop = loopButton.getToggleState();
-        audioProcessor.setLoopEnabled(shouldLoop);
+        audioProcessor.setLoopEnabled(loopButton.getToggleState());
     };
 }
 
 void ProtectedSoundsAudioProcessorEditor::setupSliders()
 {
-    // ADSR Sliders setup
     auto setupADSRSlider = [this](juce::Slider& slider, const juce::String& name) {
         addAndMakeVisible(slider);
         slider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
@@ -102,7 +70,7 @@ void ProtectedSoundsAudioProcessorEditor::setupSliders()
     setupADSRSlider(mSustainSlider2, "Sustain2");
     setupADSRSlider(mReleaseSlider2, "Release2");
 
-    // ADSR attachments
+    // Set up ADSR attachments
     mAttackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.getAPVTS(), "Attack", mAttackSlider);
     mDecayAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -111,7 +79,7 @@ void ProtectedSoundsAudioProcessorEditor::setupSliders()
         audioProcessor.getAPVTS(), "Sustain", mSustainSlider);
     mReleaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.getAPVTS(), "Release", mReleaseSlider);
-        
+    
     mAttackAttachment2 = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.getAPVTS(), "Attack2", mAttackSlider2);
     mDecayAttachment2 = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -120,38 +88,32 @@ void ProtectedSoundsAudioProcessorEditor::setupSliders()
         audioProcessor.getAPVTS(), "Sustain2", mSustainSlider2);
     mReleaseAttachment2 = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.getAPVTS(), "Release2", mReleaseSlider2);
-
-    // Loop control sliders
+    
     addAndMakeVisible(loopStartSlider);
     addAndMakeVisible(loopEndSlider);
-    
+    addAndMakeVisible(loopStartLabel);
+    addAndMakeVisible(loopEndLabel);
+
+    // Configurar estilo
     loopStartSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     loopEndSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     
     loopStartSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
     loopEndSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
     
-    loopStartSlider.setRange(0, 10000, 1);
-    loopEndSlider.setRange(0, 10000, 1);
+    // Los rangos se actualizarán cuando se cargue un sonido
+    loopStartSlider.setRange(0.0, 10000.0, 1.0);  // milisegundos
+    loopEndSlider.setRange(0.0, 10000.0, 1.0);    // milisegundos
     
-    loopStartSlider.setValue(0);
-    loopEndSlider.setValue(10000);
-
     loopStartSlider.onValueChange = [this]() { updateLoopPoints(); };
     loopEndSlider.onValueChange = [this]() { updateLoopPoints(); };
 }
 
-void ProtectedSoundsAudioProcessorEditor::setupPositionDisplay()
+void ProtectedSoundsAudioProcessorEditor::updateLoopPoints()
 {
-    addAndMakeVisible(positionSlider);
-    addAndMakeVisible(positionLabel);
-    
-    positionSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    positionSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    positionSlider.setRange(0.0, 1.0);
-    
-    positionLabel.setJustificationType(juce::Justification::centred);
-    positionLabel.setFont(15.0f);
+    double start = loopStartSlider.getValue();
+    double end = loopEndSlider.getValue();
+    audioProcessor.setLoopPoints(start, end);
 }
 
 void ProtectedSoundsAudioProcessorEditor::setupLabels()
@@ -172,9 +134,6 @@ void ProtectedSoundsAudioProcessorEditor::setupLabels()
     setupADSRLabel(mDecayLabel2, mDecaySlider2, "Decay2");
     setupADSRLabel(mSustainLabel2, mSustainSlider2, "Sustain2");
     setupADSRLabel(mReleaseLabel2, mReleaseSlider2, "Release2");
-
-    addAndMakeVisible(loopStartLabel);
-    addAndMakeVisible(loopEndLabel);
 }
 
 void ProtectedSoundsAudioProcessorEditor::paint(juce::Graphics& g)
@@ -184,27 +143,30 @@ void ProtectedSoundsAudioProcessorEditor::paint(juce::Graphics& g)
 
 void ProtectedSoundsAudioProcessorEditor::resized()
 {
-    auto area = getLocalBounds();
+    auto area = getLocalBounds().reduced(10);
+    
+    // Area para controles de loop
+    auto loopArea = area.removeFromTop(90);
+    auto loopControlsLeft = loopArea.removeFromLeft(400);
+    
+    // Botón de loop
+    loopButton.setBounds(loopControlsLeft.removeFromTop(30).removeFromLeft(100).reduced(5));
+    
+    loopControlsLeft.removeFromTop(5);
+    
+    // Loop Start
+    auto startRow = loopControlsLeft.removeFromTop(25);
+    loopStartLabel.setBounds(startRow.removeFromLeft(100));
+    loopStartSlider.setBounds(startRow);
+    
+    loopControlsLeft.removeFromTop(5);
+    
+    // Loop End
+    auto endRow = loopControlsLeft.removeFromTop(25);
+    loopEndLabel.setBounds(endRow.removeFromLeft(100));
+    loopEndSlider.setBounds(endRow);
 
-    // Position display area
-    auto topArea = area.removeFromTop(40);
-    positionSlider.setBounds(topArea.reduced(10, 5));
-    positionLabel.setBounds(topArea.removeFromRight(100));
-
-    // Transport controls
-    area.removeFromTop(5);
-    auto controlsArea = area.removeFromTop(30);
-    playButton.setBounds(controlsArea.removeFromLeft(100).reduced(5));
-    stopButton.setBounds(controlsArea.removeFromLeft(100).reduced(5));
-    loopButton.setBounds(controlsArea.removeFromLeft(100).reduced(5));
-
-    // Sound selectors
-    area.removeFromTop(5);
-    auto selectorsArea = area.removeFromTop(30);
-    soundSelector1.setBounds(selectorsArea.removeFromLeft(200).reduced(5));
-    soundSelector2.setBounds(selectorsArea.removeFromLeft(200).reduced(5));
-
-    // ADSR sliders
+    // ADSR controls
     const auto startX = 0.6f;
     const auto startY = 0.6f;
     const auto dialWidth = 0.1f;
@@ -220,87 +182,7 @@ void ProtectedSoundsAudioProcessorEditor::resized()
     mSustainSlider2.setBoundsRelative(startX - 0.5f + (dialWidth * 2), startY, dialWidth, dialHeight);
     mReleaseSlider2.setBoundsRelative(startX - 0.5f + (dialWidth * 3), startY, dialWidth, dialHeight);
 
-    // Loop controls
-    loopStartSlider.setBounds(10, 200, 200, 20);
-    loopEndSlider.setBounds(10, 230, 200, 20);
-    loopStartLabel.setBounds(220, 200, 100, 20);
-    loopEndLabel.setBounds(220, 230, 100, 20);
-}
-
-void ProtectedSoundsAudioProcessorEditor::updateLoopPoints()
-{
-    double start = loopStartSlider.getValue();
-    double end = loopEndSlider.getValue();
-    audioProcessor.setLoopPoints(start, end);
-}
-
-void ProtectedSoundsAudioProcessorEditor::updatePositionDisplay()
-{
-    double currentPos = audioProcessor.getCurrentPosition();
-    double totalLength = audioProcessor.getLengthInSeconds();
-    
-    if (totalLength > 0.0)
-    {
-        positionSlider.setValue(currentPos / totalLength, juce::dontSendNotification);
-        positionLabel.setText(formatTime(currentPos) + " / " + formatTime(totalLength),
-                            juce::dontSendNotification);
-    }
-    else
-    {
-        positionSlider.setValue(0.0, juce::dontSendNotification);
-        positionLabel.setText("0:00 / 0:00", juce::dontSendNotification);
-    }
-}
-
-void ProtectedSoundsAudioProcessorEditor::timerCallback()
-{
-    updatePositionDisplay();
-    updateTransportState();
-}
-
-void ProtectedSoundsAudioProcessorEditor::updateTransportState()
-{
-    if (audioProcessor.transportSource.isPlaying())
-    {
-        playButton.setButtonText("Stop");
-    }
-    else
-    {
-        playButton.setButtonText("Play");
-    }
-}
-
-juce::String ProtectedSoundsAudioProcessorEditor::formatTime(double timeInSeconds)
-{
-    int minutes = static_cast<int>(timeInSeconds) / 60;
-    int seconds = static_cast<int>(timeInSeconds) % 60;
-    return juce::String(minutes) + ":" + juce::String(seconds).paddedLeft('0', 2);
-}
-
-void ProtectedSoundsAudioProcessorEditor::setupLoopControls()
-{
-    addAndMakeVisible(positionSlider);
-    addAndMakeVisible(positionLabel);
-    
-    positionSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    positionSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    positionSlider.setRange(0.0, 1.0);
-    
-    positionLabel.setJustificationType(juce::Justification::centred);
-    positionLabel.setFont(15.0f);
-
-    // Loop controls
-    addAndMakeVisible(loopStartSlider);
-    addAndMakeVisible(loopEndSlider);
-    addAndMakeVisible(loopStartLabel);
-    addAndMakeVisible(loopEndLabel);
-    
-    loopStartSlider.setRange(0.0, 10000.0, 1.0);
-    loopEndSlider.setRange(0.0, 10000.0, 1.0);
-    
-    loopStartSlider.onValueChange = [this]() { updateLoopPoints(); };
-    loopEndSlider.onValueChange = [this]() { updateLoopPoints(); };
-    
-    loopStartLabel.setText("Loop Start (ms)", juce::dontSendNotification);
-    loopEndLabel.setText("Loop End (ms)", juce::dontSendNotification);
+    // Sound selectors
+    soundSelector1.setBounds(getWidth()/2 + 100, getHeight()/2 - 50, 100, 50);
+    soundSelector2.setBounds(getWidth()/2 - 300, getHeight()/2 - 50, 100, 50);
 }
