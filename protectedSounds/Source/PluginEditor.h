@@ -31,6 +31,11 @@ private:
     juce::Slider mAttackSlider2, mDecaySlider2, mSustainSlider2, mReleaseSlider2;
     juce::Label mAttackLabel, mDecayLabel, mSustainLabel, mReleaseLabel;
     juce::Label mAttackLabel2, mDecayLabel2, mSustainLabel2, mReleaseLabel2;
+    //filtro
+    juce::Slider filterFreqSlider;
+    juce::Slider filterResSlider;
+    juce::Label filterFreqLabel;
+    juce::Label filterResLabel;
 
     // APVTS attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mAttackAttachment;
@@ -41,11 +46,18 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mSustainAttachment2;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mReleaseAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mReleaseAttachment2;
-
+    //filtro
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> filterFreqAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> filterResAttachment;
+    
     void setupSliders();
     void setupLabels();
     void setupButtons();
     void updateLoopPoints();
+    
+    juce::Slider mixSlider;
+    juce::Label mixLabel;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProtectedSoundsAudioProcessorEditor)
 };

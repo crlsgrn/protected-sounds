@@ -4,6 +4,10 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn">
   <MAINGROUP id="QTWKvK" name="protectedSounds">
     <GROUP id="{2A6EBD8B-089A-0A79-8409-21DDAFDCE3D8}" name="Source">
+      <FILE id="Fj033f" name="A_Crickets_Insects_Albufera_Processed.wav"
+            compile="0" resource="1" file="../../../Downloads/A_Crickets_Insects_Albufera_Processed.wav"/>
+      <FILE id="wnw4RG" name="A_Crickets_Insects_Albufera_Clean.wav" compile="0"
+            resource="1" file="../../../Downloads/A_Crickets_Insects_Albufera_Clean.wav"/>
       <FILE id="cum5tN" name="CustomLookAndFeel.h" compile="0" resource="0"
             file="Source/CustomLookAndFeel.h"/>
       <FILE id="YZislb" name="CiberEncriptado-two_notes.wav" compile="0"

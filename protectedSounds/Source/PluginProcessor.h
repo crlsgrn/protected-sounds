@@ -37,12 +37,13 @@ public:
 
     void loadProtectedSound1(const juce::String& soundName);
     void loadProtectedSound2(const juce::String& soundName);
+    void loadProtectedSoundPair(const juce::String& soundName);
     juce::StringArray getAvailableSounds() const;
     void updateADSR();
     
     juce::ADSR::Parameters& getADSRParams() { return mADSRParams; }
     juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; }
-    
+    //loop
     void setLoopEnabled(bool shouldLoop) { loopEnabled.store(shouldLoop); }
     bool isLooping() const { return loopEnabled.load(); }
     double getAudioLength() const { return audioLength.load(); }
@@ -50,6 +51,10 @@ public:
     void setLoopPoints(double startMs, double endMs);
     double getLoopStart() const { return loopStartPosition.load(); }
     double getLoopEnd() const { return loopEndPosition.load(); }
+    //filtro
+    void setFilterFrequency(float frequency);
+    void setFilterResonance(float resonance);
+    float getFilterFrequency() const { return filterFrequency; }
 
 private:
     juce::Synthesiser mSampler1;
@@ -78,8 +83,16 @@ private:
     std::atomic<double> audioLength { 0.0 };
     std::atomic<double> loopStartPosition { 0.0 };
     std::atomic<double> loopEndPosition { 0.0 };
+    double currentPosition = 0.0;
+
     
     ProtectedSoundsManager soundsManager;
+    
+    juce::dsp::StateVariableTPTFilter<float> filter;
+    float filterFrequency = 1000.0f;
+    float filterResonance = 0.7f;
+    
+    float mixAmount = 0.5f;
 
 
     

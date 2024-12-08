@@ -19,6 +19,9 @@ ProtectedSoundsManager::ProtectedSoundsManager()
     // Añade los nombres de tus sonidos aquí
     // Asegúrate de que estos nombres coincidan con los nombres de los recursos que has añadido
     availableSounds = {"comb_57_68_v89_110", "encrypted_audio", "CiberEncriptado-two_notes"};
+    audioPairs = {
+        {"A_Crickets_Insects_Albufera_Clean", "A_Crickets_Insects_Albufera_Processed"}, {"comb_57_68_v89_110", "comb_57_68_v89_110"}
+    };
     formatManager.registerBasicFormats();
     encryptionKey = juce::String("mysecretkey").toUTF8();
 
@@ -26,7 +29,28 @@ ProtectedSoundsManager::ProtectedSoundsManager()
 
 juce::StringArray ProtectedSoundsManager::getAvailableSounds() const
 {
-    return availableSounds;
+    //return availableSounds;
+    
+    juce::StringArray names;
+    for (const auto& pair : audioPairs)
+        names.add(pair.cleanName);
+    return names;
+}
+
+std::pair<std::unique_ptr<juce::MemoryInputStream>, std::unique_ptr<juce::MemoryInputStream>>
+ProtectedSoundsManager::loadSoundPair(const juce::String& baseName)
+{
+    // Buscar el par correspondiente
+    for (const auto& pair : audioPairs)
+    {
+        if (pair.cleanName == baseName)
+        {
+            auto cleanStream = loadSound(pair.cleanName);
+            auto excitedStream = loadSound(pair.excitedName);
+            return {std::move(cleanStream), std::move(excitedStream)};
+        }
+    }
+    return {nullptr, nullptr};
 }
 
 std::unique_ptr<juce::MemoryInputStream> ProtectedSoundsManager::loadSound(const juce::String& soundName)

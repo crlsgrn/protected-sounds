@@ -105,6 +105,12 @@ void ProtectedSoundsAudioProcessor::prepareToPlay(double sampleRate, int samples
     spec.sampleRate = sampleRate;
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = getTotalNumOutputChannels();
+    
+    filter.prepare(spec);
+    filter.setType(juce::dsp::StateVariableTPTFilterType::bandpass); // Puedes cambiar a lowpass, highpass, etc.
+    filter.setCutoffFrequency(filterFrequency);
+    filter.setResonance(filterResonance);
+    
     limiter.prepare(spec);
 }
 
@@ -121,6 +127,93 @@ bool ProtectedSoundsAudioProcessor::isBusesLayoutSupported(const BusesLayout& la
     return true;
 }
 
+void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+{
+    juce::ScopedNoDenormals noDenormals;
+    
+    
+    // Track sample position
+    static double currentSamplePosition = 0.0;
+    double sampleDuration = static_cast<double>(buffer.getNumSamples()) / getSampleRate();
+    
+    // Procesar mensajes MIDI y loop
+    juce::MidiBuffer processedMidi; // Nuevo buffer MIDI que contendrá todos los mensajes
+    
+    // Copiar los mensajes MIDI originales
+    for (const auto metadata : midiMessages)
+    {
+        processedMidi.addEvent(metadata.getMessage(), metadata.samplePosition);
+        
+        auto message = metadata.getMessage();
+        if (message.isNoteOn())
+        {
+            isNotePlaying.store(true);
+            currentNoteNumber.store(message.getNoteNumber());
+            currentSamplePosition = 0.0;  // Reset position on new note
+        }
+        else if (message.isNoteOff() && message.getNoteNumber() == currentNoteNumber.load())
+        {
+            isNotePlaying.store(false);
+            currentNoteNumber.store(-1);
+            currentSamplePosition = 0.0;
+        }
+    }
+ 
+    // Limpiar buffers
+    for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
+    {
+        buffer.clear(i, 0, buffer.getNumSamples());
+        tempBuffer.clear(i, 0, buffer.getNumSamples());
+    }
+ 
+    if (sUpdate) {
+        updateADSR();
+    }
+    
+
+    // Procesar loop y añadir mensajes de loop si es necesario
+    if (isNotePlaying.load())
+    {
+        currentSamplePosition += sampleDuration;
+        
+        if (loopEnabled.load() && currentSamplePosition >= loopEndPosition.load())
+        {
+            currentSamplePosition = loopStartPosition.load();
+            
+            int currentNote = currentNoteNumber.load();
+            processedMidi.addEvent(juce::MidiMessage::noteOff(1, currentNote, (uint8_t)64), 0);
+            processedMidi.addEvent(juce::MidiMessage::noteOn(1, currentNote, (uint8_t)127), 1);
+        }
+    }
+
+    // Obtener el valor de mezcla
+    float mixAmount = *apvts.getRawParameterValue("MixAmount") / 100.0f;
+
+    // Procesar señal limpia (Sampler1)
+    mSampler1.renderNextBlock(tempBuffer, processedMidi, 0, buffer.getNumSamples());
+    
+    
+    tempBuffer.applyGain(1.0f - mixAmount);
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
+        buffer.addFrom(channel, 0, tempBuffer, channel, 0, buffer.getNumSamples());
+    }
+
+    tempBuffer.clear();
+
+    // Procesar señal excitada (Sampler2)
+    mSampler2.renderNextBlock(tempBuffer, processedMidi, 0, buffer.getNumSamples());
+    tempBuffer.applyGain(mixAmount);
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
+        buffer.addFrom(channel, 0, tempBuffer, channel, 0, buffer.getNumSamples());
+    }
+
+    juce::dsp::AudioBlock<float> audioBlock(buffer);
+    juce::dsp::ProcessContextReplacing<float> context(audioBlock);
+    limiter.process(context);
+}
+
+
+/*
 void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -189,7 +282,8 @@ void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
     juce::dsp::AudioBlock<float> audioBlock(buffer);
     juce::dsp::ProcessContextReplacing<float> context(audioBlock);
     limiter.process(context);
-}
+}*/
+
 
 bool ProtectedSoundsAudioProcessor::hasEditor() const
 {
@@ -272,6 +366,47 @@ void ProtectedSoundsAudioProcessor::setLoopPoints(double startMs, double endMs)
     loopEndPosition.store(juce::jlimit(loopStartPosition.load(), audioLength.load(), endSec));
 }
 
+void ProtectedSoundsAudioProcessor::loadProtectedSoundPair(const juce::String& soundName)
+{
+    auto [cleanStream, excitedStream] = soundsManager.loadSoundPair(soundName);
+    
+    if (cleanStream != nullptr && excitedStream != nullptr)
+    {
+        auto cleanReader = mFormatManager.createReaderFor(std::move(cleanStream));
+        auto excitedReader = mFormatManager.createReaderFor(std::move(excitedStream));
+
+        if (cleanReader != nullptr && excitedReader != nullptr)
+        {
+            audioLength.store(cleanReader->lengthInSamples / cleanReader->sampleRate);
+
+            juce::BigInteger range;
+            range.setRange(0, 128, true);
+            
+            mSampler1.clearSounds();
+            mSampler2.clearSounds();
+            
+            mSampler1.addSound(new juce::SamplerSound(soundName + "_clean",
+                                                     *cleanReader, range, 60, 0.1, 0.1, 10.0));
+            mSampler2.addSound(new juce::SamplerSound(soundName + "_excited",
+                                                     *excitedReader, range, 60, 0.1, 0.1, 10.0));
+            
+            updateADSR();
+            
+            // Establecer puntos de loop por defecto
+            // Inicializar puntos de loop
+            loopStartPosition.store(0.0);
+            loopEndPosition.store(audioLength.load() * 1000.0); // Convertir a milisegundos
+            
+            // Si el editor existe, actualizar los rangos de los sliders
+            if (auto* editor = dynamic_cast<ProtectedSoundsAudioProcessorEditor*>(getActiveEditor()))
+            {
+                editor->loopStartSlider.setRange(0.0, audioLength.load() * 1000.0, 1.0);
+                editor->loopEndSlider.setRange(0.0, audioLength.load() * 1000.0, 1.0);
+                editor->loopEndSlider.setValue(audioLength.load() * 1000.0, juce::dontSendNotification);
+            }
+        }
+    }
+}
 
 void ProtectedSoundsAudioProcessor::loadProtectedSound2(const juce::String& soundName)
 {
@@ -320,6 +455,18 @@ void ProtectedSoundsAudioProcessor::updateADSR()
     }
 }
 
+void ProtectedSoundsAudioProcessor::setFilterFrequency(float frequency)
+{
+    filterFrequency = frequency;
+    filter.setCutoffFrequency(filterFrequency);
+}
+
+void ProtectedSoundsAudioProcessor::setFilterResonance(float resonance)
+{
+    filterResonance = resonance;
+    filter.setResonance(filterResonance);
+}
+
 juce::StringArray ProtectedSoundsAudioProcessor::getAvailableSounds() const
 {
     return soundsManager.getAvailableSounds();
@@ -337,6 +484,24 @@ juce::AudioProcessorValueTreeState::ParameterLayout ProtectedSoundsAudioProcesso
     parameters.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("Sustain2", 1), "Sustain2", 0.0f, 1.0f, 1.0f));
     parameters.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("Release", 1), "Release", 0.0f, 5.0f, 0.0f));
     parameters.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("Release2", 1), "Release2", 0.0f, 5.0f, 0.0f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID("FilterFreq", 1),
+        "Filter Frequency",
+        juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.3f),
+        1000.0f));
+
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID("FilterRes", 1),
+        "Filter Resonance",
+        juce::NormalisableRange<float>(0.1f, 1.0f, 0.01f),
+        0.7f));
+    parameters.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID("MixAmount", 1),
+        "Mix",
+        0.0f,   // min
+        100.0f, // max
+        50.0f   // default
+    ));
 
     return { parameters.begin(), parameters.end() };
 }

@@ -15,6 +15,48 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
     soundSelector1.clear();
     soundSelector2.clear();
     
+    // Configuración del slider de frecuencia del filtro
+    filterFreqSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    filterFreqSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 80, 20);
+    filterFreqSlider.setRange(20.0f, 20000.0f, 1.0f);
+    filterFreqSlider.setSkewFactorFromMidPoint(1000.0f); // Hace que el control sea más sensible alrededor de 1kHz
+    addAndMakeVisible(filterFreqSlider);
+    
+    filterFreqLabel.setFont(10.0f);
+    filterFreqLabel.setText("Frequency", juce::NotificationType::dontSendNotification);
+    filterFreqLabel.setJustificationType(juce::Justification::centredTop);
+    filterFreqLabel.attachToComponent(&filterFreqSlider, false);
+    addAndMakeVisible(filterFreqLabel);
+    
+    filterFreqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.getAPVTS(), "FilterFreq", filterFreqSlider);
+
+    // Configuración del slider de resonancia del filtro
+    filterResSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    filterResSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 80, 20);
+    filterResSlider.setRange(0.1f, 1.0f, 0.01f);
+    addAndMakeVisible(filterResSlider);
+    
+    filterResLabel.setFont(10.0f);
+    filterResLabel.setText("Resonance", juce::NotificationType::dontSendNotification);
+    filterResLabel.setJustificationType(juce::Justification::centredTop);
+    filterResLabel.attachToComponent(&filterResSlider, false);
+    addAndMakeVisible(filterResLabel);
+    
+    filterResAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.getAPVTS(), "FilterRes", filterResSlider);
+    
+    mixSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 40, 20);
+    mixSlider.setRange(0.0f, 100.0f, 0.1f);
+    addAndMakeVisible(mixSlider);
+
+    mixLabel.setText("Mix %", juce::dontSendNotification);
+    mixLabel.attachToComponent(&mixSlider, false);
+
+    mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.getAPVTS(), "MixAmount", mixSlider);
+    
     // Agregar items
     auto sounds = audioProcessor.getAvailableSounds();
     soundSelector1.addItemList(sounds, 1);
@@ -35,10 +77,13 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
     
     soundSelector2.onChange = [this]() {
         if (soundSelector2.getSelectedItemIndex() >= 0)
-            audioProcessor.loadProtectedSound2(soundSelector2.getText());
+            audioProcessor.loadProtectedSoundPair(soundSelector2.getText());
     };
 
+    
+
     setSize(800, 300);
+    
 }
 
 ProtectedSoundsAudioProcessorEditor::~ProtectedSoundsAudioProcessorEditor() = default;
@@ -141,6 +186,8 @@ void ProtectedSoundsAudioProcessorEditor::paint(juce::Graphics& g)
     g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
 }
 
+
+
 void ProtectedSoundsAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced(10);
@@ -148,6 +195,9 @@ void ProtectedSoundsAudioProcessorEditor::resized()
     // Area para controles de loop
     auto loopArea = area.removeFromTop(90);
     auto loopControlsLeft = loopArea.removeFromLeft(400);
+    
+    // Mix control
+    mixSlider.setBounds(loopControlsLeft.removeFromRight(100).reduced(5));
     
     // Botón de loop
     loopButton.setBounds(loopControlsLeft.removeFromTop(30).removeFromLeft(100).reduced(5));
@@ -185,4 +235,4 @@ void ProtectedSoundsAudioProcessorEditor::resized()
     // Sound selectors
     soundSelector1.setBounds(getWidth()/2 + 100, getHeight()/2 - 50, 100, 50);
     soundSelector2.setBounds(getWidth()/2 - 300, getHeight()/2 - 50, 100, 50);
-}
+} 
