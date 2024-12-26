@@ -213,78 +213,6 @@ void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
 }
 
 
-/*
-void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
-{
-    juce::ScopedNoDenormals noDenormals;
-    
-    // Track sample position
-    static double currentSamplePosition = 0.0;
-    double sampleDuration = static_cast<double>(buffer.getNumSamples()) / getSampleRate();
-    
-    for (const auto metadata : midiMessages)
-    {
-        auto message = metadata.getMessage();
-        if (message.isNoteOn())
-        {
-            isNotePlaying.store(true);
-            currentNoteNumber.store(message.getNoteNumber());
-            currentSamplePosition = 0.0;  // Reset position on new note
-        }
-        else if (message.isNoteOff() && message.getNoteNumber() == currentNoteNumber.load())
-        {
-            isNotePlaying.store(false);
-            currentNoteNumber.store(-1);
-            currentSamplePosition = 0.0;
-        }
-    }
-
-    for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
-    {
-        buffer.clear(i, 0, buffer.getNumSamples());
-        tempBuffer.clear(i, 0, buffer.getNumSamples());
-    }
-
-    if (sUpdate) {
-        updateADSR();
-    }
-
-    // Update position and check for loop
-    if (isNotePlaying.load())
-    {
-        currentSamplePosition += sampleDuration;
-        
-        if (loopEnabled.load() && currentSamplePosition >= loopEndPosition.load())
-        {
-            currentSamplePosition = loopStartPosition.load();
-            
-            int currentNote = currentNoteNumber.load();
-            juce::MidiMessage noteOff = juce::MidiMessage::noteOff(1, currentNote, (uint8_t)64);
-            juce::MidiMessage noteOn = juce::MidiMessage::noteOn(1, currentNote, (uint8_t)127);
-            
-            midiMessages.addEvent(noteOff, 0);
-            midiMessages.addEvent(noteOn, 1);
-        }
-    }
-
-    mSampler1.renderNextBlock(tempBuffer, midiMessages, 0, buffer.getNumSamples());
-    for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
-        buffer.addFrom(channel, 0, tempBuffer, channel, 0, buffer.getNumSamples());
-    }
-
-    tempBuffer.clear();
-
-    mSampler2.renderNextBlock(tempBuffer, midiMessages, 0, buffer.getNumSamples());
-    for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
-        buffer.addFrom(channel, 0, tempBuffer, channel, 0, buffer.getNumSamples());
-    }
-
-    juce::dsp::AudioBlock<float> audioBlock(buffer);
-    juce::dsp::ProcessContextReplacing<float> context(audioBlock);
-    limiter.process(context);
-}*/
-
-
 bool ProtectedSoundsAudioProcessor::hasEditor() const
 {
     return true;
@@ -378,6 +306,10 @@ void ProtectedSoundsAudioProcessor::loadProtectedSoundPair(const juce::String& s
         if (cleanReader != nullptr && excitedReader != nullptr)
         {
             audioLength.store(cleanReader->lengthInSamples / cleanReader->sampleRate);
+            
+            waveForm.setSize(1, (int)cleanReader->lengthInSamples);
+            cleanReader->read(&waveForm, 0, (int)cleanReader->lengthInSamples, 0, true, false);
+            fileName = soundName;
 
             juce::BigInteger range;
             range.setRange(0, 128, true);
@@ -403,6 +335,7 @@ void ProtectedSoundsAudioProcessor::loadProtectedSoundPair(const juce::String& s
                 editor->loopStartSlider.setRange(0.0, audioLength.load() * 1000.0, 1.0);
                 editor->loopEndSlider.setRange(0.0, audioLength.load() * 1000.0, 1.0);
                 editor->loopEndSlider.setValue(audioLength.load() * 1000.0, juce::dontSendNotification);
+                editor->repaint();
             }
         }
     }

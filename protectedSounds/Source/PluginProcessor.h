@@ -55,6 +55,12 @@ public:
     void setFilterFrequency(float frequency);
     void setFilterResonance(float resonance);
     float getFilterFrequency() const { return filterFrequency; }
+    
+    juce::AudioBuffer<float>& getWaveForm() { return waveForm; }
+    const juce::String& getFileName() const { return fileName; }
+    void setWaveForm(const juce::AudioBuffer<float>& newWaveForm) { waveForm = newWaveForm; }
+    void setFileName(const juce::String& name) { fileName = name; }
+
 
 private:
     juce::Synthesiser mSampler1;
@@ -94,6 +100,10 @@ private:
     
     float mixAmount = 0.5f;
 
+    //waveform
+    juce::AudioBuffer<float> waveForm;
+    juce::String fileName;
+    
 
     
     

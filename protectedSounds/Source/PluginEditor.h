@@ -2,7 +2,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 
-class ProtectedSoundsAudioProcessorEditor : public juce::AudioProcessorEditor
+class ProtectedSoundsAudioProcessorEditor : public juce::AudioProcessorEditor, public juce::MouseListener
 {
 public:
     explicit ProtectedSoundsAudioProcessorEditor(ProtectedSoundsAudioProcessor&);
@@ -36,6 +36,11 @@ private:
     juce::Slider filterResSlider;
     juce::Label filterFreqLabel;
     juce::Label filterResLabel;
+    
+    std::unique_ptr<juce::AudioFormatReader> formatReader;
+    juce::AudioBuffer<float> waveForm;
+    juce::String fileName;
+    std::vector<float> audioPoints;
 
     // APVTS attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mAttackAttachment;
@@ -58,6 +63,10 @@ private:
     juce::Slider mixSlider;
     juce::Label mixLabel;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAttachment;
+    
+    bool isDraggingStartMarker = false;
+    bool isDraggingEndMarker = false;
+    float markerDragTolerance = 5.0f; // pixels
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProtectedSoundsAudioProcessorEditor)
 };

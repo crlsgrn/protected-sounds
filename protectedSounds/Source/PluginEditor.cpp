@@ -6,9 +6,10 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
     setupButtons();
     setupSliders();
     setupLabels();
+    
 
     // Setup sound selectors
-    addAndMakeVisible(soundSelector1);
+    //addAndMakeVisible(soundSelector1);
     addAndMakeVisible(soundSelector2);
     
     // Asegurar que los ComboBox estén vacíos antes de agregar items
@@ -57,7 +58,6 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
     mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.getAPVTS(), "MixAmount", mixSlider);
     
-    // Agregar items
     auto sounds = audioProcessor.getAvailableSounds();
     soundSelector1.addItemList(sounds, 1);
     soundSelector2.addItemList(sounds, 1);
@@ -72,7 +72,7 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
     // Configurar callbacks
     soundSelector1.onChange = [this]() {
         if (soundSelector1.getSelectedItemIndex() >= 0)
-            audioProcessor.loadProtectedSound1(soundSelector1.getText());
+            audioProcessor.loadProtectedSoundPair(soundSelector1.getText());
     };
     
     soundSelector2.onChange = [this]() {
@@ -184,13 +184,63 @@ void ProtectedSoundsAudioProcessorEditor::setupLabels()
 void ProtectedSoundsAudioProcessorEditor::paint(juce::Graphics& g)
 {
     g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
-}
 
+    auto waveform = audioProcessor.getWaveForm();
+    
+    if (waveform.getNumSamples() > 0)
+    {
+        juce::Path p;
+        audioPoints.clear();
+        
+        // Área para dibujar la forma de onda
+        auto waveformBounds = getLocalBounds().reduced(10).removeFromTop(100);
+        
+        auto ratio = waveform.getNumSamples() / waveformBounds.getWidth();
+        auto buffer = waveform.getReadPointer(0);
+        
+        // Escalar audio al ancho de la ventana
+        for (int sample = 0; sample < waveform.getNumSamples(); sample += ratio)
+        {
+            audioPoints.push_back(buffer[sample]);
+        }
+        
+        g.setColour(juce::Colours::yellow);
+        p.startNewSubPath(waveformBounds.getX(), waveformBounds.getCentreY());
+        
+        // Escalar en el eje Y
+        for (int sample = 0; sample < audioPoints.size(); ++sample)
+        {
+            auto point = juce::jmap<float>(audioPoints[sample], -1.0f, 1.0f,
+                                         waveformBounds.getBottom(), waveformBounds.getY());
+            p.lineTo(waveformBounds.getX() + sample, point);
+        }
+        
+        g.strokePath(p, juce::PathStrokeType(2));
+        
+        // Dibujar marcadores de loop
+        if (audioProcessor.isLooping())
+        {
+            auto startX = juce::jmap<float>(audioProcessor.getLoopStart(),
+                                          0.0f, audioProcessor.getAudioLength(),
+                                          waveformBounds.getX(), waveformBounds.getRight());
+            
+            auto endX = juce::jmap<float>(audioProcessor.getLoopEnd(),
+                                        0.0f, audioProcessor.getAudioLength(),
+                                        waveformBounds.getX(), waveformBounds.getRight());
+            
+            g.setColour(juce::Colours::red);
+            g.drawLine(startX, waveformBounds.getY(), startX, waveformBounds.getBottom(), 2.0f);
+            g.drawLine(endX, waveformBounds.getY(), endX, waveformBounds.getBottom(), 2.0f);
+        }
+    }
+}
 
 
 void ProtectedSoundsAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced(10);
+    
+    auto waveformArea = area.removeFromTop(100);
     
     // Area para controles de loop
     auto loopArea = area.removeFromTop(90);
