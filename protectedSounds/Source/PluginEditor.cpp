@@ -233,6 +233,86 @@ void ProtectedSoundsAudioProcessorEditor::paint(juce::Graphics& g)
             g.drawLine(endX, waveformBounds.getY(), endX, waveformBounds.getBottom(), 2.0f);
         }
     }
+    
+    auto waveformBounds = getLocalBounds().reduced(10).removeFromTop(100);
+
+    // Dibujar marcadores de loop como áreas interactivas
+    if (audioProcessor.isLooping())
+    {
+        auto startX = juce::jmap<float>(audioProcessor.getLoopStart(),
+                                      0.0f, audioProcessor.getAudioLength(),
+                                      waveformBounds.getX(), waveformBounds.getRight());
+        
+        auto endX = juce::jmap<float>(audioProcessor.getLoopEnd(),
+                                    0.0f, audioProcessor.getAudioLength(),
+                                    waveformBounds.getX(), waveformBounds.getRight());
+        
+        g.setColour(juce::Colours::red);
+        
+        // Dibujar marcadores con áreas para arrastrar
+        g.drawLine(startX, waveformBounds.getY(), startX, waveformBounds.getBottom(), 2.0f);
+        g.drawLine(endX, waveformBounds.getY(), endX, waveformBounds.getBottom(), 2.0f);
+        
+        // Áreas de agarre
+        g.setColour(juce::Colours::red.withAlpha(0.3f));
+        g.fillRect(juce::Rectangle<float>(startX - markerDragTolerance,
+                                         waveformBounds.getY(),
+                                         markerDragTolerance * 2,
+                                         waveformBounds.getHeight()));
+        g.fillRect(juce::Rectangle<float>(endX - markerDragTolerance,
+                                         waveformBounds.getY(),
+                                         markerDragTolerance * 2,
+                                         waveformBounds.getHeight()));
+    }
+}
+
+
+void ProtectedSoundsAudioProcessorEditor::mouseDown(const juce::MouseEvent& e)
+{
+    auto waveformBounds = getLocalBounds().reduced(10).removeFromTop(100);
+    
+    auto startX = juce::jmap<float>(audioProcessor.getLoopStart(),
+                                  0.0f, audioProcessor.getAudioLength(),
+                                  waveformBounds.getX(), waveformBounds.getRight());
+    
+    auto endX = juce::jmap<float>(audioProcessor.getLoopEnd(),
+                                0.0f, audioProcessor.getAudioLength(),
+                                waveformBounds.getX(), waveformBounds.getRight());
+    
+    if (std::abs(e.x - startX) < markerDragTolerance && waveformBounds.contains(e.getPosition()))
+        isDraggingStartMarker = true;
+    else if (std::abs(e.x - endX) < markerDragTolerance && waveformBounds.contains(e.getPosition()))
+        isDraggingEndMarker = true;
+}
+
+void ProtectedSoundsAudioProcessorEditor::mouseDrag(const juce::MouseEvent& e)
+{
+    if (isDraggingStartMarker || isDraggingEndMarker)
+    {
+        auto waveformBounds = getLocalBounds().reduced(10).removeFromTop(100);
+        auto timeInMs = juce::jmap<float>(e.x,
+                                        waveformBounds.getX(), waveformBounds.getRight(),
+                                        0.0f, audioProcessor.getAudioLength() * 1000.0f);
+        
+        timeInMs = juce::jlimit<float>(0.0f, audioProcessor.getAudioLength() * 1000.0f, timeInMs);
+        
+        if (isDraggingStartMarker)
+        {
+            loopStartSlider.setValue(timeInMs, juce::sendNotification);
+        }
+        else
+        {
+            loopEndSlider.setValue(timeInMs, juce::sendNotification);
+        }
+        
+        repaint();
+    }
+}
+
+void ProtectedSoundsAudioProcessorEditor::mouseUp(const juce::MouseEvent&)
+{
+    isDraggingStartMarker = false;
+    isDraggingEndMarker = false;
 }
 
 

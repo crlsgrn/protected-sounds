@@ -2,7 +2,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 
-class ProtectedSoundsAudioProcessorEditor : public juce::AudioProcessorEditor, public juce::MouseListener
+class ProtectedSoundsAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:
     explicit ProtectedSoundsAudioProcessorEditor(ProtectedSoundsAudioProcessor&);
@@ -15,6 +15,10 @@ public:
     juce::Slider loopEndSlider;
     juce::Label loopStartLabel{"", "Loop Start (ms)"};
     juce::Label loopEndLabel{"", "Loop End (ms)"};
+    
+    void mouseDown(const juce::MouseEvent& e) override;
+    void mouseDrag(const juce::MouseEvent& e) override;
+    void mouseUp(const juce::MouseEvent& e) override;
 
 private:
     ProtectedSoundsAudioProcessor& audioProcessor;
