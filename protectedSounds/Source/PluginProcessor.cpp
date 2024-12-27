@@ -149,7 +149,9 @@ void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
         {
             isNotePlaying.store(true);
             currentNoteNumber.store(message.getNoteNumber());
-            currentSamplePosition = 0.0;  // Reset position on new note
+            //currentSamplePosition = 0.0;  // Reset position on new note
+            currentSamplePosition = loopEnabled ? loopStartPosition.load() : 0.0;
+
         }
         else if (message.isNoteOff() && message.getNoteNumber() == currentNoteNumber.load())
         {
