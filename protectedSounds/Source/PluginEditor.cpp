@@ -9,7 +9,7 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
     
 
     // Setup sound selectors
-    //addAndMakeVisible(soundSelector1);
+    addAndMakeVisible(soundSelector1);
     addAndMakeVisible(soundSelector2);
     
     // Asegurar que los ComboBox estén vacíos antes de agregar items
@@ -69,7 +69,7 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
         soundSelector2.setSelectedItemIndex(0, juce::dontSendNotification);
     }
     
-    // Configurar callbacks
+    /*// Configurar callbacks
     soundSelector1.onChange = [this]() {
         if (soundSelector1.getSelectedItemIndex() >= 0)
             audioProcessor.loadProtectedSoundPair(soundSelector1.getText());
@@ -78,6 +78,28 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
     soundSelector2.onChange = [this]() {
         if (soundSelector2.getSelectedItemIndex() >= 0)
             audioProcessor.loadProtectedSoundPair(soundSelector2.getText());
+    };*/
+    /*
+    // Configurar callbacks
+    soundSelector1.onChange = [this]() {
+        if (soundSelector1.getSelectedItemIndex() >= 0)
+            audioProcessor.loadProtectedSoundPairForSampler1(soundSelector1.getText());
+    };
+
+    soundSelector2.onChange = [this]() {
+        if (soundSelector2.getSelectedItemIndex() >= 0)
+            audioProcessor.loadProtectedSoundPairForSampler2(soundSelector2.getText());
+    };*/
+    
+    // Configurar callbacks
+    soundSelector1.onChange = [this]() {
+        if (soundSelector1.getSelectedItemIndex() >= 0)
+            audioProcessor.loadSoundPairForSelector1(soundSelector1.getText());
+    };
+
+    soundSelector2.onChange = [this]() {
+        if (soundSelector2.getSelectedItemIndex() >= 0)
+            audioProcessor.loadSoundPairForSelector2(soundSelector2.getText());
     };
 
     
@@ -155,10 +177,18 @@ void ProtectedSoundsAudioProcessorEditor::setupSliders()
 }
 
 void ProtectedSoundsAudioProcessorEditor::updateLoopPoints()
-{
+{/*
     double start = loopStartSlider.getValue();
     double end = loopEndSlider.getValue();
-    audioProcessor.setLoopPoints(start, end);
+    audioProcessor.setLoopPoints(start, end);*/
+    // Convertir de ms a samples
+    int64_t startSamples = static_cast<int64_t>((loopStartSlider.getValue() / 1000.0) * audioProcessor.getSampleRate());
+    int64_t endSamples = static_cast<int64_t>((loopEndSlider.getValue() / 1000.0) * audioProcessor.getSampleRate());
+    
+    DBG("Setting loop points - Start samples: " << startSamples);
+    DBG("Setting loop points - End samples: " << endSamples);
+    
+    audioProcessor.setLoopPoints(startSamples, endSamples);
 }
 
 void ProtectedSoundsAudioProcessorEditor::setupLabels()

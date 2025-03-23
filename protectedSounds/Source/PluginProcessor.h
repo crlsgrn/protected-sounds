@@ -38,6 +38,10 @@ public:
     void loadProtectedSound1(const juce::String& soundName);
     void loadProtectedSound2(const juce::String& soundName);
     void loadProtectedSoundPair(const juce::String& soundName);
+    void loadProtectedSoundPairForSampler1(const juce::String& soundName);
+    void loadProtectedSoundPairForSampler2(const juce::String& soundName);
+    void loadSoundPairForSelector1(const juce::String& soundName);
+    void loadSoundPairForSelector2(const juce::String& soundName);
     juce::StringArray getAvailableSounds() const;
     void updateADSR();
     
@@ -47,8 +51,8 @@ public:
     void setLoopEnabled(bool shouldLoop) { loopEnabled.store(shouldLoop); }
     bool isLooping() const { return loopEnabled.load(); }
     double getAudioLength() const { return audioLength.load(); }
-    
-    void setLoopPoints(double startMs, double endMs);
+    void setLoopPoints(int64_t startSamples, int64_t endSamples);
+    //void setLoopPoints(double startMs, double endMs);
     double getLoopStart() const { return loopStartPosition.load(); }
     double getLoopEnd() const { return loopEndPosition.load(); }
     //filtro
@@ -65,6 +69,11 @@ public:
 private:
     juce::Synthesiser mSampler1;
     juce::Synthesiser mSampler2;
+    // En la sección private:
+    juce::Synthesiser mSampler1Clean;
+    juce::Synthesiser mSampler1Excited;
+    juce::Synthesiser mSampler2Clean;
+    juce::Synthesiser mSampler2Excited;
     const int mNumVoices { 3 };
     
     juce::dsp::Limiter<float> limiter;
@@ -87,10 +96,12 @@ private:
     std::atomic<int> currentNoteNumber { -1 };
     std::atomic<bool> loopEnabled { false };
     std::atomic<double> audioLength { 0.0 };
-    std::atomic<double> loopStartPosition { 0.0 };
-    std::atomic<double> loopEndPosition { 0.0 };
-    double currentPosition = 0.0;
-
+    //std::atomic<double> loopStartPosition { 0.0 };
+    //std::atomic<double> loopEndPosition { 0.0 };
+    //double currentPosition = 0.0;
+    std::atomic<int64_t> loopStartPosition{0};  // en samples
+    std::atomic<int64_t> loopEndPosition{0};    // en samples
+    std::atomic<int64_t> currentSamplePosition{0}; // en samples
     
     ProtectedSoundsManager soundsManager;
     
