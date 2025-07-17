@@ -10,43 +10,12 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
 
     // Setup sound selectors
     addAndMakeVisible(soundSelector1);
-    addAndMakeVisible(soundSelector2);
+    //addAndMakeVisible(soundSelector2); //hice que solo se viera un selector para pruebas
     
-    // Asegurar que los ComboBox estén vacíos antes de agregar items
     soundSelector1.clear();
     soundSelector2.clear();
     
-    // Configuración del slider de frecuencia del filtro
-    filterFreqSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    filterFreqSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 80, 20);
-    filterFreqSlider.setRange(20.0f, 20000.0f, 1.0f);
-    filterFreqSlider.setSkewFactorFromMidPoint(1000.0f); // Hace que el control sea más sensible alrededor de 1kHz
-    addAndMakeVisible(filterFreqSlider);
-    
-    filterFreqLabel.setFont(10.0f);
-    filterFreqLabel.setText("Frequency", juce::NotificationType::dontSendNotification);
-    filterFreqLabel.setJustificationType(juce::Justification::centredTop);
-    filterFreqLabel.attachToComponent(&filterFreqSlider, false);
-    addAndMakeVisible(filterFreqLabel);
-    
-    filterFreqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.getAPVTS(), "FilterFreq", filterFreqSlider);
-
-    // Configuración del slider de resonancia del filtro
-    filterResSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    filterResSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 80, 20);
-    filterResSlider.setRange(0.1f, 1.0f, 0.01f);
-    addAndMakeVisible(filterResSlider);
-    
-    filterResLabel.setFont(10.0f);
-    filterResLabel.setText("Resonance", juce::NotificationType::dontSendNotification);
-    filterResLabel.setJustificationType(juce::Justification::centredTop);
-    filterResLabel.attachToComponent(&filterResSlider, false);
-    addAndMakeVisible(filterResLabel);
-    
-    filterResAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.getAPVTS(), "FilterRes", filterResSlider);
-    
+    //SLIDER de limpio/sucio
     mixSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 40, 20);
     mixSlider.setRange(0.0f, 100.0f, 0.1f);
@@ -69,7 +38,7 @@ ProtectedSoundsAudioProcessorEditor::ProtectedSoundsAudioProcessorEditor(Protect
         soundSelector2.setSelectedItemIndex(0, juce::dontSendNotification);
     }
     
-    /*// Configurar callbacks
+    /*//  callbacks de seleccion de audios con diferentes metodos
     soundSelector1.onChange = [this]() {
         if (soundSelector1.getSelectedItemIndex() >= 0)
             audioProcessor.loadProtectedSoundPair(soundSelector1.getText());

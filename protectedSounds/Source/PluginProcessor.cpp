@@ -230,7 +230,7 @@ void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
 void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    
+    //metodo cambiado con mensajes de deubg añadidos para ver que pasa con el punto de inicio del loop
     DBG("---------------");
     DBG("Loop Start (samples): " << loopStartPosition.load());
     DBG("Loop End (samples): " << loopEndPosition.load());
@@ -238,12 +238,12 @@ void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
     
     juce::MidiBuffer processedMidi;
     
-    // Copiar los mensajes MIDI originales
     for (const auto metadata : midiMessages)
     {
         processedMidi.addEvent(metadata.getMessage(), metadata.samplePosition);
         
         auto message = metadata.getMessage();
+        
         if (message.isNoteOn())
         {
             isNotePlaying.store(true);
@@ -251,7 +251,7 @@ void ProtectedSoundsAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
             
             if (loopEnabled.load()) {
                 // Establecer la posición directamente a loopStartPosition
-                int64_t startPos = loopStartPosition.load();
+                int64_t startPos = loopStartPosition.load(); //coger del slider
                 DBG("Setting position to loop start: " << startPos);
                 currentSamplePosition.store(startPos);
             } else {
@@ -472,9 +472,21 @@ void ProtectedSoundsAudioProcessor::setLoopPoints(double startMs, double endMs)
 
 void ProtectedSoundsAudioProcessor::setLoopPoints(int64_t startSamples, int64_t endSamples)
 {
+    // Asegurarse de que el inicio no sea mayor que el final
+    if (startSamples > endSamples) {
+        std::swap(startSamples, endSamples);
+    }
+    
+    // Asegurarse de que los valores estén dentro de los límites
+    int64_t maxSamples = static_cast<int64_t>(audioLength.load() * getSampleRate());
+    startSamples = juce::jlimit<int64_t>(0, maxSamples - 1, startSamples);
+    endSamples = juce::jlimit<int64_t>(startSamples + 1, maxSamples, endSamples);
+    
     loopStartPosition.store(startSamples);
     loopEndPosition.store(endSamples);
-    DBG("Loop points set - Start: " << startSamples << " End: " << endSamples);
+    
+    DBG("Loop points stored - Start: " << startSamples << " End: " << endSamples);
+    DBG("Loop duration (samples): " << (endSamples - startSamples));
 }
 
 /*
@@ -755,3 +767,4 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new ProtectedSoundsAudioProcessor();
 }
+

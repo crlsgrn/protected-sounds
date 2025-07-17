@@ -64,6 +64,7 @@ public:
     const juce::String& getFileName() const { return fileName; }
     void setWaveForm(const juce::AudioBuffer<float>& newWaveForm) { waveForm = newWaveForm; }
     void setFileName(const juce::String& name) { fileName = name; }
+    void updateEditorLoopSliders();
 
 
 private:
